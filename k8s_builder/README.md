@@ -1,7 +1,7 @@
 Role Name
 =========
 
-This role will setup kubernetes cluster with nodes
+This role will setup kubernetes cluster with all nodes from a given inventory
 
 Requirements
 ------------
