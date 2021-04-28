@@ -1,0 +1,108 @@
+---
+# tasks file for k8s_builder for all nodes
+
+- name: remove swap line in fstab
+  mount:
+    name: "{{ item }}"
+    fstype: swap
+    state: absent
+  register: fstab_result
+  loop:
+    - swap
+    - none
+
+- name: swap off
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: reboot the system
+  reboot:
+    msg: rebooting to apply swap changes
+  when: fstab_result is changed
+
+- name: load containerd prereq
+  command: "{{ item }}"
+  loop:
+    - modprobe overlay
+    - modprobe br_netfilter
+
+- name: add containerd config
+  lineinfile:
+    path: /etc/modules-load.d/containerd.conf
+    line: "{{ item }}"
+    create: yes
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: apply sysctl params
+  sysctl:
+    name: "{{ item }}"
+    value: '1'
+    state: present
+    sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+    reload: yes
+  loop:
+    - net.bridge.bridge-nf-call-iptables
+    - net.ipv4.ip_forward
+    - net.bridge.bridge-nf-call-ip6tables
+
+- name: make sure containerd config directory exist
+  file:
+    path: /etc/containerd
+    state: directory
+  register: containerd_dir_created
+
+- name: add apt signing keys for kubernetes
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: add kubernetes repo
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: kubernetes.list
+  register: repo_added
+
+- name: install packages
+  apt:
+    name: "{{ item }}={{ kube_version }}"
+    state: present
+    force_apt_get: yes
+  register: installed_packages
+  loop: "{{ kube_packages }}"
+
+- name: install containerd
+  apt:
+    name: containerd
+    state: present
+    force_apt_get: yes
+  register: containerd_installed
+
+- name: hold packages from being upgraded
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  when: installed_packages is changed and containerd_installed is changed
+  loop: "{{ kube_packages + ['containerd'] }}"
+
+- name: generate containerd config
+  shell: containerd config default | sudo tee /etc/containerd/config.toml
+  when: containerd_dir_created is changed
+
+- name: set containerd config
+  lineinfile:
+    path: /etc/containerd/config.toml
+    line: "\t  [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]\n
+    \t    SystemdCgroup = true"
+    insertafter: '^(.*)privileged_without_host_devices = false(.*)$'
+  register: containerd_config
+  when: containerd_dir_created is changed
+
+- name: Configure node ip
+  lineinfile:
+    path: /etc/default/kubelet
+    line: KUBELET_EXTRA_ARGS=--node-ip={{ ansible_eth1['ipv4']['address'] }}
+    create: yes
+  notify: "restart kubelet & containerd services"

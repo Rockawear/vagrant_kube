@@ -1,0 +1,11 @@
+---
+# handlers file for k8s_builder
+
+- name: restart kubelet & containerd services
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  loop:
+    - kubelet
+    - containerd

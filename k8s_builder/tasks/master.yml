@@ -1,0 +1,94 @@
+---
+
+- name: create dir to save config files
+  file:
+    path: /home/vagrant/kube
+    state: directory
+    owner: vagrant
+  register: dir_created
+
+- name: Download calico.yml 
+  get_url:
+    url: https://docs.projectcalico.org/manifests/calico.yaml
+    dest: /home/vagrant/kube/calico.yml
+  become_user: vagrant
+  register: calico_file
+  when: dir_created is changed
+
+- name: generate default kubeadm config file
+  shell: kubeadm config print init-defaults | tee /home/vagrant/kube/ClusterConfiguration.yaml
+  become_user: vagrant
+  register: kubeadm_config
+  when: calico_file is changed
+
+- name: set kubeadm configs
+  lineinfile:
+    path: /home/vagrant/kube/ClusterConfiguration.yaml 
+    regexp: "{{ item.regexp | default(omit)}}"
+    line: "{{ item.line }}"
+    backrefs: "{{ item.backrefs | default(omit) }}"
+    insertafter: "{{ item.insertafter | default(omit) }}"
+  when: kubeadm_config is changed
+  loop:
+    - { regexp: "^(.*)advertiseAddress: 1.2.3.4(.*)$", line: "  advertiseAddress: {{ ansible_eth1['ipv4']['address'] }}", backrefs: 'yes' }
+    - { regexp: "^(.*)criSocket: /var/run/dockershim.sock(.*)$", line: "  criSocket: /run/containerd/containerd.sock", backrefs: 'yes' }
+    - { regexp: "^(.*)kubernetesVersion: v1.20.0(.*)$", line: "kubernetesVersion: 1.20.1", backrefs: 'yes' }
+    - { line: "---\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\ncgroupDriver: systemd" }
+    - { line: "  podSubnet: 10.244.0.0/16", insertafter: "^(.*)serviceSubnet: 10.96.0.0/12(.*)$" }
+
+- name: generate kubernetes config
+  shell: "kubeadm init \
+    --config=/home/vagrant/kube/ClusterConfiguration.yaml \
+    --cri-socket /run/containerd/containerd.sock"
+  register: config_generated
+  when: kubeadm_config is changed
+
+- name: create hiding dir for user
+  file:
+    path: /home/vagrant/.kube
+    state: directory
+    owner: vagrant
+    group: vagrant
+  become_user: vagrant
+
+- name: copy admin config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/vagrant/.kube/config
+    owner: vagrant
+    group: vagrant
+    remote_src: yes
+  when: config_generated is changed 
+
+- name: add socket to kubeadm and configure control plane account
+  shell: kubectl apply -f /home/vagrant/kube/calico.yml
+  become_user: vagrant
+  when: config_generated is changed
+
+- name: install bash-completion on control plane
+  apt:
+    name: bash-completion
+    state: present
+    force_apt_get: yes
+  register: completion_installed
+
+- name: add kubernetes bash completion
+  lineinfile:
+    path: /home/vagrant/.bashrc
+    line: "source <(kubectl completion bash)"
+  become_user: vagrant
+  register: bash_completion
+  when: completion_installed is changed
+
+- name: get join command from kubeadm
+  shell: kubeadm token create --print-join-command
+  register: cp_join_command
+  when: 
+  
+- name: set join command fact
+  set_fact:
+    join_command: "sudo {{ cp_join_command.stdout_lines[0] }}"
+  when: cp_join_command is defined
+  
+
+    
