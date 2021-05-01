@@ -1,7 +1,7 @@
 Role Name
 =========
 
-This role will setup kubernetes cluster with all nodes from a given inventory
+This role will setup a containerd based kubernetes cluster with all nodes from a give
 
 Requirements
 ------------
@@ -11,7 +11,9 @@ Ubuntu version 16+ is required.
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+`kube_version`:
+description: This will set the kubernetes version to be installed
+default: 1.20.1
 
 
 Example Playbook
