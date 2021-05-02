@@ -14,7 +14,7 @@ Vagrant.configure('2') do |config|
 		config.vm.define node do |kube_cluster|
 			kube_cluster.vm.box = "bento/ubuntu-18.04"
 			kube_cluster.vm.hostname = "c1-#{node}"
-			kube_cluster.vm.network 'private_network', ip: "192.168.58.#{index + 100}", name: 'vboxnet2'
+			kube_cluster.vm.network 'private_network', ip: "192.168.58.#{index + 100}"
 			kube_cluster.vm.provider 'virtualbox' do |vb|
 				cpus = 4
 				vb.cpus = cpus / 2
