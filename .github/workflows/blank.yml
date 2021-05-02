@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Lint ansible playbook
 
 # Controls when the action will run. 
 on:
@@ -14,7 +14,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -34,8 +34,21 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
         run: vagrant validate
-          #pip3 list | grep virtualenv || pip3 install virtualenv
-          #mkdir vagrant_venv && python3 -m venv $(pwd)/vagrant_venv
-          #source vagrant_venv/bin/activate
-          #pip3 install -r requirements.txt
-          #vagrant up
+#           pip3 list | grep virtualenv || pip3 install virtualenv
+#           mkdir vagrant_venv && python3 -m venv $(pwd)/vagrant_venv
+#           source vagrant_venv/bin/activate
+#           pip3 install -r requirements.txt
+          
+      - name: Lint Ansible Playbook
+        # replace "master" with any valid ref
+        uses: ansible/ansible-lint-action@master
+        with:
+          # [required]
+          targets: cluster_setup.yml
+          # [optional]
+          # Arguments to override a package and its version to be set explicitly.
+          # Must follow the example syntax.
+          override-deps: |
+            ansible==2.9
+            ansible-lint==4.2.0
+
