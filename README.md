@@ -19,7 +19,7 @@ Ansible==2.9
 Python3.5+  
 VirtualBox  
 vagrant 2.1+  
-Linux/OSX 16GB+ memory  
+Linux 16GB+ memory  
 
 How to Use
 ==========
@@ -82,7 +82,7 @@ kube-system   kube-proxy-5m5ds                           1/1     Running   0    
 kube-system   kube-proxy-6l8sv                           1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
 kube-system   kube-proxy-hnb8q                           1/1     Running   0          54m   192.168.58.102   c1-node2   <none>           <none>
 kube-system   kube-scheduler-c1-cp1                      1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
-```
+```ansible==2.9.0
 
 ```
 kubectl get all --all-namespaces
