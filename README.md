@@ -17,7 +17,7 @@ Requirements
 ============
 Ansible==2.9  
 Python3.5+ 
-VirtualBox
+VirtualBox  
 vagrant 2.1+  
 Linux/OSX 16GB+ memory  
 
