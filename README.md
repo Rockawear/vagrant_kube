@@ -118,6 +118,13 @@ NAMESPACE     NAME                                                 DESIRED   CUR
 kube-system   replicaset.apps/calico-kube-controllers-6d7b4db76c   1         1         1       56m
 kube-system   replicaset.apps/coredns-74ff55c5b                    2         2         2       56m
 ```
+
+Learn by doing
+==============
+One may learn by using this tutorial
+
+https://kubernetesbyexample.com/
+
 Teardown Cluster
 ================
 Simply run below command to removes all vagrant nodes.  

@@ -88,21 +88,44 @@
   loop: "{{ kube_packages + ['containerd'] }}"
 
 - name: generate containerd config
-  shell: containerd config default | sudo tee /etc/containerd/config.toml
+  command: containerd config default 
+  register: containerd_config
   when: containerd_dir_created is changed
+
+- name: save output to a file
+  lineinfile:
+    line: "{{ containerd_config.stdout }}"
+    path: "{{ containerd_file }}"
+    create: yes
+  register: containerd_config_exist
+  when: containerd_config is changed
 
 - name: set containerd config
   lineinfile:
-    path: /etc/containerd/config.toml
+    path: "{{ containerd_file }}"
     line: "\t  [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]\n
     \t    SystemdCgroup = true"
     insertafter: '^(.*)privileged_without_host_devices = false(.*)$'
   register: containerd_config
-  when: containerd_dir_created is changed
+  when: containerd_config_exist is defined
+  notify: "restart containerd service"
 
 - name: Configure node ip
   lineinfile:
-    path: /etc/default/kubelet
+    path: "{{ kubelet_default }}"
     line: KUBELET_EXTRA_ARGS=--node-ip={{ ansible_eth1['ipv4']['address'] }}
     create: yes
-  notify: "restart kubelet & containerd services"
+  notify: "restart kubelet service"
+
+- name: set node type
+  set_fact:
+    node_type: "{{ 'admin' if ('cp1' in inventory_hostname) else 'worker' if ('node' in inventory_hostname) }}"
+
+
+- name: working on {{ node_type }}
+  import_tasks: master.yml
+  when: node_type == 'admin'
+
+- name: working on {{ node_type }}
+  import_tasks: node_addition.yml
+  when: node_type == 'worker'

@@ -16,10 +16,18 @@
   when: dir_created is changed
 
 - name: generate default kubeadm config file
-  shell: kubeadm config print init-defaults | tee /home/vagrant/kube/ClusterConfiguration.yaml
+  command: kubeadm config print init-defaults 
   become_user: vagrant
   register: kubeadm_config
   when: calico_file is changed
+
+- name: save output to a file
+  lineinfile:
+    line: "{{ kubeadm_config.stdout }}"
+    path: /home/vagrant/kube/ClusterConfiguration.yaml
+    create: yes
+  register: kubeadm_config_exist
+  when: kubeadm_config is changed
 
 - name: set kubeadm configs
   lineinfile:
@@ -28,7 +36,7 @@
     line: "{{ item.line }}"
     backrefs: "{{ item.backrefs | default(omit) }}"
     insertafter: "{{ item.insertafter | default(omit) }}"
-  when: kubeadm_config is changed
+  when: kubeadm_config_exist is changed
   loop:
     - { regexp: "^(.*)advertiseAddress: 1.2.3.4(.*)$", line: "  advertiseAddress: {{ ansible_eth1['ipv4']['address'] }}", backrefs: 'yes' }
     - { regexp: "^(.*)criSocket: /var/run/dockershim.sock(.*)$", line: "  criSocket: /run/containerd/containerd.sock", backrefs: 'yes' }
@@ -37,7 +45,7 @@
     - { line: "  podSubnet: 10.244.0.0/16", insertafter: "^(.*)serviceSubnet: 10.96.0.0/12(.*)$" }
 
 - name: generate kubernetes config
-  shell: "kubeadm init \
+  command: "kubeadm init \
     --config=/home/vagrant/kube/ClusterConfiguration.yaml \
     --cri-socket /run/containerd/containerd.sock"
   register: config_generated
@@ -61,7 +69,7 @@
   when: config_generated is changed 
 
 - name: add socket to kubeadm and configure control plane account
-  shell: kubectl apply -f /home/vagrant/kube/calico.yml
+  command: kubectl apply -f /home/vagrant/kube/calico.yml
   become_user: vagrant
   when: config_generated is changed
 
@@ -78,12 +86,10 @@
     line: "source <(kubectl completion bash)"
   become_user: vagrant
   register: bash_completion
-  when: completion_installed is changed
 
 - name: get join command from kubeadm
-  shell: kubeadm token create --print-join-command
+  command: kubeadm token create --print-join-command
   register: cp_join_command
-  when: 
   
 - name: set join command fact
   set_fact:

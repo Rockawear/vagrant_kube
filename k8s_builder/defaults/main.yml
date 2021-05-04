@@ -8,6 +8,9 @@ kube_packages:
 
 kube_version: "1.20.1-00"
 
+containerd_file: "/etc/containerd/config.toml"
+kubelet_default: "/etc/default/kubelet"
+calico_url: "https://docs.projectcalico.org/manifests/calico.yaml"
 # kubeadm_config:
 #   - { regexp: "^(.*)advertiseAddress: 1.2.3.4(.*)$", line: "  advertiseAddress: {{ ansible_eth1['ipv4']['address'] }}", backrefs: 'yes' }
 #   - { regexp: "^(.*)criSocket: /var/run/dockershim.sock(.*)$", line: "  criSocket: /run/containerd/containerd.sock", backrefs: 'yes' }
