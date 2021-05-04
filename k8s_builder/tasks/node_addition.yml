@@ -1,0 +1,4 @@
+---
+
+- name: join worker node to control plane
+  command: "{{ hostvars[groups['cp1'][0]]['join_command'] }}"

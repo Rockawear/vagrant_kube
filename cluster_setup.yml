@@ -6,16 +6,3 @@
   become: yes
   roles: 
         - k8s_builder
-
-- hosts: cp1
-  gather_facts: yes
-  become: yes
-  tasks:
-    - name: control plane specific tasks
-      import_tasks: k8s_builder/tasks/master.yml
-
-- hosts: node*
-  gather_facts: yes
-  tasks:
-    - name: join worker node to control plane
-      shell: "{{ hostvars[groups['cp1'][0]]['join_command'] }}"
