@@ -82,7 +82,7 @@ kube-system   kube-proxy-5m5ds                           1/1     Running   0    
 kube-system   kube-proxy-6l8sv                           1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
 kube-system   kube-proxy-hnb8q                           1/1     Running   0          54m   192.168.58.102   c1-node2   <none>           <none>
 kube-system   kube-scheduler-c1-cp1                      1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
-```ansible==2.9.0
+```
 
 ```
 kubectl get all --all-namespaces
@@ -102,19 +102,15 @@ kube-system   pod/kube-proxy-5m5ds                           1/1     Running   0
 kube-system   pod/kube-proxy-6l8sv                           1/1     Running   0          56m
 kube-system   pod/kube-proxy-hnb8q                           1/1     Running   0          55m
 kube-system   pod/kube-scheduler-c1-cp1                      1/1     Running   0          56m
-
 NAMESPACE     NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
 default       service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP                  56m
 kube-system   service/kube-dns     ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   56m
-
 NAMESPACE     NAME                         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
 kube-system   daemonset.apps/calico-node   4         4         4       4            4           kubernetes.io/os=linux   56m
 kube-system   daemonset.apps/kube-proxy    4         4         4       4            4           kubernetes.io/os=linux   56m
-
 NAMESPACE     NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
 kube-system   deployment.apps/calico-kube-controllers   1/1     1            1           56m
 kube-system   deployment.apps/coredns                   2/2     2            2           56m
-
 NAMESPACE     NAME                                                 DESIRED   CURRENT   READY   AGE
 kube-system   replicaset.apps/calico-kube-controllers-6d7b4db76c   1         1         1       56m
 kube-system   replicaset.apps/coredns-74ff55c5b                    2         2         2       56m
@@ -122,9 +118,9 @@ kube-system   replicaset.apps/coredns-74ff55c5b                    2         2  
 
 Learn by doing
 ==============
-One may learn by using this tutorial
-
+One may learn by using this tutorial  
 https://kubernetesbyexample.com/
+
 
 Teardown Cluster
 ================
