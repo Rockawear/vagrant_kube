@@ -1,7 +1,7 @@
 Kubernetes Cluster
 ==================
 
-The vagrant file will spun up one Control Plane and three Worker nodes. Since Docker is deprecated starting Kubernetes v1.20, Containerd is used as the container runtime. Kubernetes was indirectly using containerd through docker. More info can be found on link below.  
+The vagrant file will spun up one Control Plane and two Worker nodes. Since Docker is deprecated starting Kubernetes v1.20, Containerd is used as the container runtime. Kubernetes was indirectly using containerd through docker. More info can be found on link below.  
 [K8s docker Deprecation](https://kubernetes.io/blog/2020/12/02/dont-panic-kubernetes-and-docker/)
 
 
@@ -61,14 +61,12 @@ NAME       STATUS   ROLES                  AGE   VERSION   INTERNAL-IP      EXTE
 c1-cp1     Ready    control-plane,master   13m   v1.20.1   192.168.58.100   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
 c1-node1   Ready    <none>                 13m   v1.20.1   192.168.58.101   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
 c1-node2   Ready    <none>                 13m   v1.20.1   192.168.58.102   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
-c1-node3   Ready    <none>                 13m   v1.20.1   192.168.58.103   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
 ```
 
 ```
 kubectl get pods --all-namespaces -o wide
 NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE   IP               NODE       NOMINATED NODE   READINESS GATES
 kube-system   calico-kube-controllers-6d7b4db76c-f59ql   1/1     Running   0          54m   10.244.13.194    c1-cp1     <none>           <none>
-kube-system   calico-node-78zm9                          1/1     Running   0          54m   192.168.58.103   c1-node3   <none>           <none>
 kube-system   calico-node-n5596                          1/1     Running   0          54m   192.168.58.102   c1-node2   <none>           <none>
 kube-system   calico-node-sz7fk                          1/1     Running   0          54m   192.168.58.101   c1-node1   <none>           <none>
 kube-system   calico-node-zjvsf                          1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
@@ -78,7 +76,6 @@ kube-system   etcd-c1-cp1                                1/1     Running   0    
 kube-system   kube-apiserver-c1-cp1                      1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
 kube-system   kube-controller-manager-c1-cp1             1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
 kube-system   kube-proxy-2f6k5                           1/1     Running   0          54m   192.168.58.101   c1-node1   <none>           <none>
-kube-system   kube-proxy-5m5ds                           1/1     Running   0          54m   192.168.58.103   c1-node3   <none>           <none>
 kube-system   kube-proxy-6l8sv                           1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>
 kube-system   kube-proxy-hnb8q                           1/1     Running   0          54m   192.168.58.102   c1-node2   <none>           <none>
 kube-system   kube-scheduler-c1-cp1                      1/1     Running   0          54m   192.168.58.100   c1-cp1     <none>           <none>

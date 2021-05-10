@@ -2,12 +2,11 @@
 # vi: set ft=ruby :
 
 Vagrant.configure('2') do |config|
-	cluster_nodes = %w[cp1 node1 node2 node3]
+	cluster_nodes = %w[cp1 node1 node2]
 	groups = {
 		'cp1' => ['cp1'],
 		'node1' => ['node1'],
-		'node2' => ['node2'],
-		'node3' => ['node3']
+		'node2' => ['node2']
 	}
 
 	cluster_nodes.each_with_index do |node, index|
