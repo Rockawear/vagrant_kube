@@ -28,7 +28,7 @@
 
 - name: add containerd config
   lineinfile:
-    path: /etc/modules-load.d/containerd.conf
+    path: "/etc/modules-load.d/containerd.conf"
     line: "{{ item }}"
     create: yes
   loop:
@@ -40,7 +40,7 @@
     name: "{{ item }}"
     value: '1'
     state: present
-    sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+    sysctl_file: "/etc/sysctl.d/99-kubernetes-cri.conf"
     reload: yes
   loop:
     - net.bridge.bridge-nf-call-iptables
@@ -49,18 +49,18 @@
 
 - name: make sure containerd config directory exist
   file:
-    path: /etc/containerd
+    path: "/etc/containerd"
     state: directory
   register: containerd_dir_created
 
 - name: add apt signing keys for kubernetes
   apt_key:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
     state: present
 
 - name: add kubernetes repo
   apt_repository:
-    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
     state: present
     filename: kubernetes.list
   register: repo_added
@@ -113,7 +113,7 @@
 - name: Configure node ip
   lineinfile:
     path: "{{ kubelet_default }}"
-    line: KUBELET_EXTRA_ARGS=--node-ip={{ ansible_eth1['ipv4']['address'] }}
+    line: "KUBELET_EXTRA_ARGS=--node-ip={{ ansible_eth1['ipv4']['address'] }}"
     create: yes
   notify: "restart kubelet service"
 
@@ -121,9 +121,12 @@
   set_fact:
     node_type: "{{ 'admin' if ('cp1' in inventory_hostname) else 'worker' if ('node' in inventory_hostname) }}"
 
-
 - name: working on {{ node_type }}
   import_tasks: master.yml
+  when: node_type == 'admin'
+
+- name: installing helm
+  import_tasks: helm.yml
   when: node_type == 'admin'
 
 - name: working on {{ node_type }}

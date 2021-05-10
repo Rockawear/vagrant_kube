@@ -2,75 +2,72 @@
 
 - name: create dir to save config files
   file:
-    path: /home/vagrant/kube
+    path: /home/{{ user }}/kube
     state: directory
-    owner: vagrant
+    owner: "{{ user }}"
+    group: "{{ user }}"
   register: dir_created
 
 - name: Download calico.yml 
   get_url:
-    url: https://docs.projectcalico.org/manifests/calico.yaml
-    dest: /home/vagrant/kube/calico.yml
-  become_user: vagrant
+    url: "{{ calico_url }}"
+    dest: "{{ calico_deployment_file }}"
+  become_user: "{{ user }}"
   register: calico_file
   when: dir_created is changed
 
 - name: generate default kubeadm config file
   command: kubeadm config print init-defaults 
-  become_user: vagrant
+  become_user: "{{ user }}"
   register: kubeadm_config
   when: calico_file is changed
 
 - name: save output to a file
   lineinfile:
     line: "{{ kubeadm_config.stdout }}"
-    path: /home/vagrant/kube/ClusterConfiguration.yaml
+    path: "{{ cluster_settings_file }}"
     create: yes
+    owner: "{{ user }}"
+    group: "{{ user }}"
   register: kubeadm_config_exist
   when: kubeadm_config is changed
 
 - name: set kubeadm configs
   lineinfile:
-    path: /home/vagrant/kube/ClusterConfiguration.yaml 
+    path: "{{ cluster_settings_file }}" 
     regexp: "{{ item.regexp | default(omit)}}"
     line: "{{ item.line }}"
     backrefs: "{{ item.backrefs | default(omit) }}"
     insertafter: "{{ item.insertafter | default(omit) }}"
   when: kubeadm_config_exist is changed
-  loop:
-    - { regexp: "^(.*)advertiseAddress: 1.2.3.4(.*)$", line: "  advertiseAddress: {{ ansible_eth1['ipv4']['address'] }}", backrefs: 'yes' }
-    - { regexp: "^(.*)criSocket: /var/run/dockershim.sock(.*)$", line: "  criSocket: /run/containerd/containerd.sock", backrefs: 'yes' }
-    - { regexp: "^(.*)kubernetesVersion: v1.20.0(.*)$", line: "kubernetesVersion: 1.20.1", backrefs: 'yes' }
-    - { line: "---\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\ncgroupDriver: systemd" }
-    - { line: "  podSubnet: 10.244.0.0/16", insertafter: "^(.*)serviceSubnet: 10.96.0.0/12(.*)$" }
+  loop: "{{ kubeadm_settings }}"
 
 - name: generate kubernetes config
   command: "kubeadm init \
-    --config=/home/vagrant/kube/ClusterConfiguration.yaml \
+    --config={{ cluster_settings_file }} \
     --cri-socket /run/containerd/containerd.sock"
   register: config_generated
   when: kubeadm_config is changed
 
 - name: create hiding dir for user
   file:
-    path: /home/vagrant/.kube
+    path: "/home/{{ user }}/.kube"
     state: directory
-    owner: vagrant
-    group: vagrant
-  become_user: vagrant
+    owner: "{{ user }}"
+    group: "{{ user }}"
 
 - name: copy admin config
   copy:
-    src: /etc/kubernetes/admin.conf
-    dest: /home/vagrant/.kube/config
-    owner: vagrant
-    group: vagrant
+    src: "/etc/kubernetes/admin.conf"
+    dest: "/home/{{ user }}/.kube/config"
+    owner: "{{ user }}"
+    group: "{{ user }}"
     remote_src: yes
   when: config_generated is changed 
 
 - name: add socket to kubeadm and configure control plane account
-  command: kubectl apply -f /home/vagrant/kube/calico.yml
-  become_user: vagrant
+  command: "kubectl apply -f  {{ calico_file.dest }}"
+  become_user: "{{ user }}"
   when: config_generated is changed
 
 - name: install bash-completion on control plane
@@ -82,9 +79,9 @@
 
 - name: add kubernetes bash completion
   lineinfile:
-    path: /home/vagrant/.bashrc
+    path: "/home/{{ user }}/.bashrc"
     line: "source <(kubectl completion bash)"
-  become_user: vagrant
+  become_user: "{{ user }}"
   register: bash_completion
 
 - name: get join command from kubeadm
@@ -94,7 +91,4 @@
 - name: set join command fact
   set_fact:
     join_command: "sudo {{ cp_join_command.stdout_lines[0] }}"
-  when: cp_join_command is defined
-  
-
-    
+  when: cp_join_command is defined  
