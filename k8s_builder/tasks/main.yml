@@ -100,15 +100,7 @@
   register: containerd_config_exist
   when: containerd_config is changed
 
-- name: set containerd config
-  lineinfile:
-    path: "{{ containerd_file }}"
-    line: "\t  [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]\n
-    \t    SystemdCgroup = true"
-    insertafter: '^(.*)privileged_without_host_devices = false(.*)$'
-  register: containerd_config
-  when: containerd_config_exist is defined
-  notify: "restart containerd service"
+- meta: flush_handlers
 
 - name: Configure node ip
   lineinfile:
