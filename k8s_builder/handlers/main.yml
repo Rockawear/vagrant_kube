@@ -12,5 +12,8 @@
     name: containerd
     state: restarted
     enabled: yes
+
+- name: add helm bash completion
+  shell: helm completion bash > /etc/bash_completion.d/helm
     
     

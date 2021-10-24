@@ -1,23 +1,9 @@
 ---
 
-- name: add signing key
-  apt_key:
-    url: "https://baltocdn.com/helm/signing.asc"
-    state: present
-  
-- name: add apt_repository
-  apt_repository:
-    repo: "deb https://baltocdn.com/helm/stable/debian/ all main"
-    state: present
-    filename: helm-stable-debian.list
-  register: helm_repo_added
+- name: installing helm
+  snap: 
+    name: helm
+    classic: yes
+  notify: 
+    - add helm bash completion
 
-- name: install helm package
-  apt:
-    name: "{{ item }}"
-    state: present
-    force_apt_get: yes
-  loop:
-    - apt-transport-https
-    - helm
-  when: helm_repo_added is changed
