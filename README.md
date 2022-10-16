@@ -57,10 +57,11 @@ Cluster Validation
 ==================
 ```
 kubectl get nodes -o wide
-NAME       STATUS   ROLES                  AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
-c1-cp1     Ready    control-plane,master   13m   v1.20.1   192.168.58.100   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
-c1-node1   Ready    <none>                 13m   v1.20.1   192.168.58.101   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
-c1-node2   Ready    <none>                 13m   v1.20.1   192.168.58.102   <none>        Ubuntu 18.04.5 LTS   4.15.0-128-generic   containerd://1.3.3
+NAME    STATUS   ROLES           AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
+cp1     Ready    control-plane   11m   v1.25.0   192.168.58.100   <none>        Ubuntu 18.04.6 LTS   4.15.0-163-generic   containerd://1.5.5
+node1   Ready    worker          11m   v1.25.0   192.168.58.101   <none>        Ubuntu 18.04.6 LTS   4.15.0-163-generic   containerd://1.5.5
+node2   Ready    worker          11m   v1.25.0   192.168.58.102   <none>        Ubuntu 18.04.6 LTS   4.15.0-163-generic   containerd://1.5.5
+node3   Ready    worker          11m   v1.25.0   192.168.58.103   <none>        Ubuntu 18.04.6 LTS   4.15.0-163-generic   containerd://1.5.5
 ```
 
 ```
