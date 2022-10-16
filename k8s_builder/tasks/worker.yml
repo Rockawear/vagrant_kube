@@ -1,0 +1,4 @@
+---
+
+- name: join worker node to control plane
+  ansible.builtin.command: "{{ hostvars[groups['cp1'][0]]['join_command'] }}"
