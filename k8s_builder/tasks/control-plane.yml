@@ -1,0 +1,106 @@
+---
+
+- name: install etcd-client for backup & restore
+  ansible.builtin.apt:
+    name: etcd-client
+    state: present
+
+- name: intall packages depedencies
+  ansible.builtin.pip:
+    name:
+      - kubernetes
+
+- name: create dir to save config files
+  ansible.builtin.file:
+    path: /home/{{ user }}/kube
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ user }}"
+  register: dir_created
+
+- name: Download calico.yml 
+  ansible.builtin.get_url:
+    url: "{{ calico_url }}"
+    dest: "{{ calico_deployment_file }}"
+  become_user: "{{ user }}"
+  register: calico_file
+  when: dir_created is changed
+
+- name: generate default kubeadm config file
+  ansible.builtin.command: kubeadm config print init-defaults 
+  become_user: "{{ user }}"
+  register: kubeadm_config
+  when: calico_file is changed
+
+- name: save output to a file
+  ansible.builtin.lineinfile:
+    line: "{{ kubeadm_config.stdout }}"
+    path: "{{ cluster_settings_file }}"
+    create: yes
+    owner: "{{ user }}"
+    group: "{{ user }}"
+  register: kubeadm_config_exist
+  when: kubeadm_config is changed
+
+- name: set kubeadm configs
+  ansible.builtin.lineinfile:
+    path: "{{ cluster_settings_file }}" 
+    regexp: "{{ item.regexp | default(omit)}}"
+    line: "{{ item.line }}"
+    backrefs: "{{ item.backrefs | default(omit) }}"
+    insertafter: "{{ item.insertafter | default(omit) }}"
+  when: kubeadm_config_exist is changed
+  loop: "{{ kubeadm_settings }}"
+
+- name: generate kubernetes config
+  ansible.builtin.command: "kubeadm init --node-name {{ ansible_hostname }} \
+    --config={{ cluster_settings_file }} --v=5"
+  register: config_generated
+  when: kubeadm_config is changed
+
+- name: create hiding dir for user
+  ansible.builtin.file:
+    path: "/home/{{ user }}/.kube"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ user }}"
+
+- name: copy admin config
+  ansible.builtin.copy:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "/home/{{ user }}/.kube/config"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    remote_src: yes
+
+- name: configure pod networking
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ calico_file.dest }}"
+  become_user: "{{ user }}"
+
+- name: install bash-completion on control plane
+  ansible.builtin.apt:
+    name: bash-completion
+    state: present
+    force_apt_get: yes
+  register: completion_installed
+
+- name: add vim settings for yaml and kubernetes bash completion
+  ansible.builtin.lineinfile:
+    path: "{{ item.file }}"
+    line: "{{ item.line }}"
+    create: yes
+    mode: "0644"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+  loop: "{{ customization_settings }}"
+
+- name: get join command from kubeadm
+  ansible.builtin.command: kubeadm token create --print-join-command
+  register: cp_join_command
+  
+- name: set join command fact
+  ansible.builtin.set_fact:
+    join_command: "sudo {{ cp_join_command.stdout_lines[0] }}"
+  when: cp_join_command is defined  

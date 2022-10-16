@@ -1,0 +1,8 @@
+---
+
+- name: join backup plane node to control plane
+  ansible.builtin.command: "{{ hostvars[groups['cp1'][0]]['join_command'] + 
+               ' --control-plane --certificate-key ' + 
+               hostvars[groups['cp1'][0]]['certificate_key'] +
+               ' --apiserver-advertise-address ' +
+               hostvars[groups['cp1'][0]].ansible_eth1.ipv4.address }}"
