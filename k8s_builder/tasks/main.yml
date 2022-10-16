@@ -2,7 +2,7 @@
 # tasks file for k8s_builder for all nodes
 
 - name: remove swap line in fstab
-  mount:
+  ansible.posix.mount:
     name: "{{ item }}"
     fstype: swap
     state: absent
@@ -12,31 +12,32 @@
     - none
 
 - name: swap off
-  command: swapoff -a
+  ansible.builtin.command: swapoff -a
   when: ansible_swaptotal_mb > 0
 
 - name: reboot the system
-  reboot:
+  ansible.builtin.reboot:
     msg: rebooting to apply swap changes
   when: fstab_result is changed
 
 - name: load containerd prereq
-  command: "{{ item }}"
+  ansible.builtin.command: "{{ item }}"
   loop:
     - modprobe overlay
     - modprobe br_netfilter
 
 - name: add containerd config
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "/etc/modules-load.d/containerd.conf"
     line: "{{ item }}"
     create: yes
+    mode: "0644"
   loop:
     - overlay
     - br_netfilter
 
 - name: apply sysctl params
-  sysctl:
+  ansible.posix.sysctl:
     name: "{{ item }}"
     value: '1'
     state: present
@@ -48,25 +49,26 @@
     - net.bridge.bridge-nf-call-ip6tables
 
 - name: make sure containerd config directory exist
-  file:
+  ansible.builtin.file:
     path: "/etc/containerd"
     state: directory
+    mode: "0644"
   register: containerd_dir_created
 
 - name: add apt signing keys for kubernetes
-  apt_key:
+  ansible.builtin.apt_key:
     url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
     state: present
 
 - name: add kubernetes repo
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
     state: present
     filename: kubernetes.list
   register: repo_added
 
 - name: install packages
-  apt:
+  ansible.builtin.apt:
     name: "{{ item }}={{ kube_version }}"
     state: present
     force_apt_get: yes
@@ -74,53 +76,70 @@
   loop: "{{ kube_packages }}"
 
 - name: install containerd
-  apt:
-    name: containerd
+  ansible.builtin.apt:
+    name: 
+      - containerd
+      - python3-pip
     state: present
     force_apt_get: yes
+    update_cache: yes
   register: containerd_installed
 
 - name: hold packages from being upgraded
-  dpkg_selections:
+  ansible.builtin.dpkg_selections:
     name: "{{ item }}"
     selection: hold
   when: installed_packages is changed and containerd_installed is changed
   loop: "{{ kube_packages + ['containerd'] }}"
 
 - name: generate containerd config
-  command: containerd config default 
+  ansible.builtin.command: containerd config default
   register: containerd_config
   when: containerd_dir_created is changed
 
 - name: save output to a file
-  lineinfile:
+  ansible.builtin.lineinfile:
     line: "{{ containerd_config.stdout }}"
     path: "{{ containerd_file }}"
     create: yes
+    mode: "0644"
   register: containerd_config_exist
   when: containerd_config is changed
 
-- meta: flush_handlers
+- name: flush handlers
+  ansible.builtin.meta: flush_handlers
 
-- name: Configure node ip
-  lineinfile:
+- name: configure node ip
+  ansible.builtin.lineinfile:
     path: "{{ kubelet_default }}"
     line: "KUBELET_EXTRA_ARGS=--node-ip={{ ansible_eth1['ipv4']['address'] }}"
     create: yes
+    mode: "0644"
   notify: "restart kubelet service"
 
 - name: set node type
-  set_fact:
-    node_type: "{{ 'admin' if ('cp1' in inventory_hostname) else 'worker' if ('node' in inventory_hostname) }}"
+  ansible.builtin.set_fact:
+    node_type: "{{ 'control-plane' if ('cp1' in inventory_hostname) else 
+                   'backup-plane' if ('cpb' in inventory_hostname) else 
+                   'worker' if ('node' in inventory_hostname) }}"
 
-- name: working on {{ node_type }}
-  import_tasks: master.yml
-  when: node_type == 'admin'
+- name: "working on {{ node_type }}"
+  ansible.builtin.include_tasks: "{{ node_type }}.yml"
+
+- block:
+    - name: update node role
+      kubernetes.core.k8s:
+        state: patched
+        kind: Node
+        name: 
+        definition:
+          metadata:
+            name: "{{ ansible_hostname }}"
+            labels:
+              kubernetes.io/role: "{{ node_type  }}"
+  become_user: "{{ user }}"
+  delegate_to: "{{ groups['cp1'][0] }}"
 
 - name: installing helm
-  import_tasks: helm.yml
-  when: node_type == 'admin'
-
-- name: working on {{ node_type }}
-  import_tasks: node_addition.yml
-  when: node_type == 'worker'
+  ansible.builtin.include_tasks: helm.yml
+  when: node_type == 'control-plane'

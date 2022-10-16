@@ -15,5 +15,11 @@
 
 - name: add helm bash completion
   shell: helm completion bash > /etc/bash_completion.d/helm
+
+- name: deploy CNI plugin
+  ansible.builtin.k8s:
+    state: present
+    src: "{{ calico_file.dest }}"
+  become_user: "(( user ))"
     
     

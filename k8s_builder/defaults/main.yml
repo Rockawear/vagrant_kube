@@ -6,7 +6,7 @@ kube_packages:
   - kubelet
   - kubeadm
 
-kube_version: "1.20.1-00"
+kube_version: "1.25.0-00"
 
 user: "vagrant"
 
@@ -19,6 +19,15 @@ cluster_settings_file: "/home/{{ user }}/kube/ClusterConfiguration.yaml"
 kubeadm_settings:
   - { regexp: "^(.*)advertiseAddress: 1.2.3.4(.*)$", line: "  advertiseAddress: {{ ansible_eth1['ipv4']['address'] }}", backrefs: 'yes' }
   - { regexp: "^(.*)criSocket: /var/run/dockershim.sock(.*)$", line: "  criSocket: /run/containerd/containerd.sock", backrefs: 'yes' }
-  - { regexp: "^(.*)kubernetesVersion: v1.20.0(.*)$", line: "kubernetesVersion: {{ kube_version[0:-3] }}", backrefs: 'yes' }
+  - { regexp: "^(.*)kubernetesVersion: v(.*)$", line: "kubernetesVersion: {{ kube_version[0:-3] }}", backrefs: 'yes' }
   - { line: "---\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\ncgroupDriver: systemd" }
   - { line: "  podSubnet: 10.244.0.0/16", insertafter: "^(.*)serviceSubnet: 10.96.0.0/12(.*)$" }
+  
+
+customization_settings:
+  - { line: '" add yaml stuffs', file: "/home/{{ user }}/.vimrc" }
+  - { line: "au! BufNewFile,BufReadPost *.{yaml,yml} set filetype=yaml foldmethod=indent", file: "/home/{{ user }}/.vimrc" }
+  - { line: "autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab", file: "/home/{{ user }}/.vimrc" }
+  - { line: 'source <(kubectl completion bash)', file: "/home/{{ user }}/.bashrc" }
+  - { line: 'alias k=kubectl', file: "/home/{{ user }}/.bashrc" }
+  - { line: 'complete -F __start_kubectl k', file: "/home/{{ user }}/.bashrc" }

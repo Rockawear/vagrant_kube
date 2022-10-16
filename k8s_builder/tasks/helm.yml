@@ -1,9 +1,8 @@
 ---
 
 - name: installing helm
-  snap: 
+  ansible.builtin.snap: 
     name: helm
     classic: yes
-  notify: 
-    - add helm bash completion
+  notify: "add helm bash completion"
 
