@@ -15,7 +15,6 @@ Worker Nodes:
 
 Requirements
 ============
-Ansible==2.9  
 Python3.5+  
 VirtualBox  
 vagrant 2.1+  
