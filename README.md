@@ -122,5 +122,5 @@ https://kubebyexample.com/
 
 Teardown Cluster
 ================
-Simply run below command to removes all vagrant nodes.  
+Simply run below command in project main directory to removes all vagrant nodes.  
 `vagrant destroy -f`
