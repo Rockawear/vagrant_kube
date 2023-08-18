@@ -118,8 +118,7 @@ kube-system   replicaset.apps/coredns-74ff55c5b                    2         2  
 Learn by doing
 ==============
 One may learn by using this tutorial  
-https://kubernetesbyexample.com/
-
+https://kubebyexample.com/
 
 Teardown Cluster
 ================
