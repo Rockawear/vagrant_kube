@@ -46,11 +46,11 @@
   ansible.builtin.lineinfile:
     path: "{{ cluster_settings_file }}" 
     regexp: "{{ item.regexp | default(omit)}}"
-    line: "{{ item.line }}"
+    line: "{{ item.line | default(omit)}}"
     backrefs: "{{ item.backrefs | default(omit) }}"
     insertafter: "{{ item.insertafter | default(omit) }}"
   when: kubeadm_config_exist is changed
-  loop: "{{ kubeadm_settings }}"
+  loop: "{{ kubeadm_settings + kubeadm_metallb if enable_metallb | default(true) else kubeadm_settings }}"
 
 - name: generate kubernetes config
   ansible.builtin.command: "kubeadm init --node-name {{ ansible_hostname }} \
@@ -71,6 +71,7 @@
     dest: "/home/{{ user }}/.kube/config"
     owner: "{{ user }}"
     group: "{{ user }}"
+    mode: 0600
     remote_src: yes
 
 - name: configure pod networking

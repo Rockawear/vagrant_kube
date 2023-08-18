@@ -1,8 +1,24 @@
 ---
 
-- name: installing helm
-  ansible.builtin.snap: 
-    name: helm
-    classic: yes
+- name: tmp folder
+  ansible.builtin.tempfile:
+    path: /tmp
+    state: directory
+  register: tempdir
+
+- name: install helm
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: "{{ tempdir.path }}/get_helm.sh"
+    mode: 0700
+  register: helm_package
+
+- name: install
+  ansible.builtin.shell: "{{ helm_package.dest }}"
+
+    #- name: installing helm
+    #  ansible.builtin.snap: 
+    # name: helm
+    #classic: yes
   notify: "add helm bash completion"
 

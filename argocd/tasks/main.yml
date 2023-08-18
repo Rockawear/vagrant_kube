@@ -1,0 +1,4 @@
+---
+# tasks file for vagrant_kube/argocd
+
+https://argoproj.github.io/argo-helm

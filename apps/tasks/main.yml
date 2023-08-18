@@ -1,0 +1,56 @@
+---
+# tasks file for apps
+
+- name: get cluster information
+  kubernetes.core.k8s_cluster_info:
+  register: api_status
+
+- name: add chart repo
+  kubernetes.core.helm_repository:
+    name: "{{ item.name }}"
+    repo_url: "{{ item.url }}"
+  loop:
+    - { url: "https://kubernetes.github.io/ingress-nginx", name: "ingress-nginx" }
+    - { url: "https://metallb.github.io/metallb", name: "metallb" }
+    - { url: "https://argoproj.github.io/argo-helm", name: "argo" }
+
+- name: deploy lb, ingress, & argocd chart
+  kubernetes.core.helm:
+    name: "{{ item.name }}"
+    chart_ref: "{{ item.chart_ref }}"
+    release_namespace: "{{ item.namespace | default(omit) }}"
+    create_namespace: "{{ item.create_namespace | default(omit) }}"
+    update_repo_cache: true
+    wait: true
+  register: component_installed
+  loop:
+    - { name: "ingress-nginx", chart_ref: "ingress-nginx/ingress-nginx", namespace: "ingress-nginx", create_namespace: "true" }
+    - { name: "metallb", chart_ref: "metallb/metallb", namespace: "metallb-system", create_namespace: "true" }
+    - { name: "argocd", chart_ref: "argo/argo-cd", namespace: "argocd", create_namespace: "true" }
+
+- name: address pool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: default
+        namespace: metallb-system
+      spec:
+        addresses:
+          - 192.168.58.120-192.168.58.130
+        autoAssign: true
+
+- name: address pool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: default
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+          - default
