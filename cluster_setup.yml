@@ -6,4 +6,4 @@
   roles: 
     - { role: k8s_builder }
     - { role: nfs_storage, become: no, when: (node_type == 'control-plane') and (nfs_servers is defined) }
-    - { role: metallb, become: no, when: node_type == 'control-plane' }
+    - { role: apps, become: no, when: node_type == 'control-plane' }
