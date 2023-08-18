@@ -15,10 +15,10 @@
   ansible.builtin.command: swapoff -a
   when: ansible_swaptotal_mb > 0
 
-- name: reboot the system
-  ansible.builtin.reboot:
-    msg: rebooting to apply swap changes
-  when: fstab_result is changed
+- name: set timezone
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/UTC"
+    path: "/etc/localtime"
 
 - name: load containerd prereq
   ansible.builtin.command: "{{ item }}"
@@ -48,24 +48,44 @@
     - net.ipv4.ip_forward
     - net.bridge.bridge-nf-call-ip6tables
 
+- name: reboot the system
+  ansible.builtin.reboot:
+    msg: rebooting to apply swap changes
+  when: fstab_result is changed
+
 - name: make sure containerd config directory exist
   ansible.builtin.file:
-    path: "/etc/containerd"
+    path: "{{ item }}"
     state: directory
     mode: "0644"
   register: containerd_dir_created
+  loop:
+    - "/etc/apt/keyrings"
+    - "/etc/containerd"
 
 - name: add apt signing keys for kubernetes
   ansible.builtin.apt_key:
-    url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+    url: "{{ item }}"
     state: present
+  loop:
+    - "https://download.docker.com/linux/ubuntu/gpg"
+    - "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
 
-- name: add kubernetes repo
+- name: get space architecture
+  ansible.builtin.command:
+    cmd: "dpkg --print-architecture"
+  args: false
+  register: deb_arch
+
+- name: add repositories
   ansible.builtin.apt_repository:
-    repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+    repo: "{{ item.repo }}"
     state: present
-    filename: kubernetes.list
+    filename: "{{ item.file }}"
   register: repo_added
+  loop:
+    - { repo: "{{ docker_repo }}", file: "docker.list" }
+    - { repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main", file: "kubernetes.list" }
 
 - name: install packages
   ansible.builtin.apt:
@@ -78,7 +98,7 @@
 - name: install containerd
   ansible.builtin.apt:
     name: 
-      - containerd
+      - containerd.io
       - python3-pip
     state: present
     force_apt_get: yes
@@ -97,6 +117,13 @@
   register: containerd_config
   when: containerd_dir_created is changed
 
+- name: remove old containerd configs
+  ansible.builtin.file:
+    path: "{{ containerd_file }}"
+    state: absent
+  register: containerd_config_removed
+  when: containerd_config is changed
+
 - name: save output to a file
   ansible.builtin.lineinfile:
     line: "{{ containerd_config.stdout }}"
@@ -105,6 +132,20 @@
     mode: "0644"
   register: containerd_config_exist
   when: containerd_config is changed
+
+- name: set containerd config
+  lineinfile:
+    path: "{{ containerd_file }}"
+    regexp: "^(.*)SystemdCgroup(.*)$"
+    line: "\t    SystemdCgroup = true"
+    insertafter: '^(.*)ShimCgroup(.*)$'
+    backrefs: yes
+  register: containerd_config
+  when: >
+      "(containerd_config_exist is defined) and 
+       (containerd_config_removed is changed) or 
+       (containerd_config_removed is changed)"
+  notify: "restart containerd service"
 
 - name: flush handlers
   ansible.builtin.meta: flush_handlers

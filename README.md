@@ -5,6 +5,8 @@ The vagrant file will spun up one Control Plane and two Worker nodes. Since Dock
 [K8s docker Deprecation](https://kubernetes.io/blog/2020/12/02/dont-panic-kubernetes-and-docker/)
 
 
+A few apps will get deployed which will enable the user to start deployments asap. By default, ArgoCD, Nginx controller, and MetalLB will be deployed. The automation expects to be run on your local with below requirements.
+
 Control Plane:
 3GB memory,
 2 CPU

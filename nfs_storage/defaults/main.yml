@@ -1,0 +1,12 @@
+---
+# defaults file for nfs_storage
+
+helm_values:
+    replicas: "1"
+    storageClass:
+        defaultClass: true
+        name: "nfs-01"
+        provisionerName: "nfs-provisioner-01"
+        nfs:
+            server: "{{ nfs_server }}"
+            path: "{{ nfs_path }}"

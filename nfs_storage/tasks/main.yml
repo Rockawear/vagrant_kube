@@ -1,0 +1,24 @@
+---
+# tasks file for nfs_storage
+
+# tasks file for nfs_storage
+- name: get gluster information
+  kubernetes.core.k8s_cluster_info:
+  register: api_status
+
+- name: add nfs chart repo
+  kubernetes.core.helm_repository:
+    name: nfs-subdir-external-provisioner
+    repo_url: "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/"
+
+- name: deploy nfs chart
+  kubernetes.core.helm:
+    name: nfs-provisioner-01
+    atomic: true
+    chart_ref: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+    release_namespace: nfs-provisioner
+    create_namespace: yes
+    replace: true
+    update_repo_cache: true
+    wait: yes
+    values: "{{ lookup('template', 'helm_values.yaml.j2') | from_yaml }}"

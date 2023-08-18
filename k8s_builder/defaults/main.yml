@@ -6,24 +6,30 @@ kube_packages:
   - kubelet
   - kubeadm
 
-kube_version: "1.25.0-00"
-
+kube_version: "1.27.1-00"
+  
 user: "vagrant"
 
 containerd_file: "/etc/containerd/config.toml"
 kubelet_default: "/etc/default/kubelet"
-calico_url: "https://docs.projectcalico.org/manifests/calico.yaml"
+# calico_url: "https://docs.projectcalico.org/manifests/calico.yaml"
+calico_url: "https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml"
 calico_deployment_file: "/home/{{ user }}/kube/calico.yml"
 cluster_settings_file: "/home/{{ user }}/kube/ClusterConfiguration.yaml"
 
 kubeadm_settings:
   - { regexp: "^(.*)advertiseAddress: 1.2.3.4(.*)$", line: "  advertiseAddress: {{ ansible_eth1['ipv4']['address'] }}", backrefs: 'yes' }
-  - { regexp: "^(.*)criSocket: /var/run/dockershim.sock(.*)$", line: "  criSocket: /run/containerd/containerd.sock", backrefs: 'yes' }
+  - { regexp: "^(.*)criSocket: unix:///var/run/containerd/containerd.sock(.*)$", line: "  criSocket: unix:///run/containerd/containerd.sock", backrefs: 'yes' }
   - { regexp: "^(.*)kubernetesVersion: v(.*)$", line: "kubernetesVersion: {{ kube_version[0:-3] }}", backrefs: 'yes' }
   - { line: "---\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\ncgroupDriver: systemd" }
   - { line: "  podSubnet: 10.244.0.0/16", insertafter: "^(.*)serviceSubnet: 10.96.0.0/12(.*)$" }
-  
 
+kubeadm_metallb:
+  - { line: "---\napiVersion: kubeproxy.config.k8s.io/v1alpha1" }
+  - { line: "kind: KubeProxyConfiguration" }
+  - { line: "mode: ipvs" }
+  - { line: "ipvs:\n  strictARP: true" }
+  
 customization_settings:
   - { line: '" add yaml stuffs', file: "/home/{{ user }}/.vimrc" }
   - { line: "au! BufNewFile,BufReadPost *.{yaml,yml} set filetype=yaml foldmethod=indent", file: "/home/{{ user }}/.vimrc" }
@@ -31,3 +37,5 @@ customization_settings:
   - { line: 'source <(kubectl completion bash)', file: "/home/{{ user }}/.bashrc" }
   - { line: 'alias k=kubectl', file: "/home/{{ user }}/.bashrc" }
   - { line: 'complete -F __start_kubectl k', file: "/home/{{ user }}/.bashrc" }
+
+docker_repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
